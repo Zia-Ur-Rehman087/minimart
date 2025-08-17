@@ -1,40 +1,39 @@
-// /src/products.js
 
-// ===== DOM refs (match your HTML) =====
 const container = document.getElementById("products-container");
 const loadBtn = document.getElementById("load-btn");
 const loader = document.getElementById("loader");
 const searchInput = document.getElementById("search-input");
 
+
 const cartBtnHeader = document.getElementById("cart-btn");
-const favBtnHeader = document.getElementById("fav-btn");     // header button (id), not the card hearts
+const favBtnHeader = document.getElementById("fav-btn");     // header ka favourite button
 const ordersBtnHeader = document.getElementById("orders-btn");
+
 
 const cartCountEl = document.getElementById("cart-count");
 const favCountEl = document.getElementById("fav-count");
 const ordersCountEl = document.getElementById("orders-count");
 
-// Popup
+
 const overlay = document.getElementById("popup-overlay");
 const popupTitle = document.getElementById("popup-title");
 const popupBody = document.getElementById("popup-body");
 const popupClose = document.getElementById("popup-close");
 
-// ===== State =====
 let products = [];
 let filtered = [];
-let visibleCount = 6;            // show 6 by default
-const step = 3;                  // load/show more step
+let visibleCount = 6;
+const step = 3;
 const minVisible = 3;
 
-let cart = loadLS("cart", []);                         // [{id,title,price,image,qty}]
-let favourites = new Set(loadLS("favourites", []));    // Set of product ids
-let orders = loadLS("orders", []);                     // [{id, date, items:[...], total}]
 
-// Init badge counts
+let cart = loadLS("cart", []);
+let favourites = new Set(loadLS("favourites", []));
+let orders = loadLS("orders", []);
+
+
 syncCounts();
 
-// ===== Utils =====
 function loadLS(key, fallback) {
     try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
 }
@@ -67,13 +66,13 @@ function syncCounts() {
     ordersCountEl.textContent = orders.length;
 }
 
-// ===== Fetch & Render =====
+
 async function loadProducts() {
     loader.classList.remove("hidden");
     try {
         const res = await fetch("https://api.escuelajs.co/api/v1/products");
         products = await res.json();
-        // Basic cleanup: filter out products with missing title/price
+
         products = products.filter(p => p && p.id && p.title && typeof p.price !== "undefined");
         applyFilter();
     } catch (err) {
@@ -106,15 +105,15 @@ function renderProducts() {
         const img = validImage(p.images);
         const card = document.createElement("div");
         card.className =
-            "relative bg-white shadow rounded-xl p-4 flex flex-col transition transform  hover:shadow-lg duration-300";
+            "relative bg-white shadow rounded-xl flex flex-col transition transform  hover:shadow-lg duration-300 group";
 
         card.innerHTML = `
-      <!-- Heart/Favourite (top-right) -->
+      <!-- Heart/Favourite button (top-right) -->
       <button 
-        class="absolute top-3 right-3 rounded-full p-1 bg-black/40 backdrop-blur-sm"
+        class="absolute top-2 right-2 rounded-full p-1  z-50"
         data-action="fav" data-id="${p.id}" aria-label="Add to favourites">
         <svg xmlns="http://www.w3.org/2000/svg"
-             class="h-7 w-7"
+             class="h-14 w-14"
              viewBox="0 0 24 24"
              stroke="${isFav ? "red" : "white"}" stroke-width="2"
              fill="${isFav ? "red" : "none"}">
@@ -125,34 +124,37 @@ function renderProducts() {
         </svg>
       </button>
 
-      <!-- Image -->
-      <div class='h-32 w-full hover:scale-120 overflow-hidden'>
+      <!-- Product image -->
+      <div class='h-64 w-full  overflow-hidden'>
       
-      <img src="${img}" alt="${p.title}"
-           class="h-48 w-full object-cover rounded-lg mb-3"
-           onerror="this.src='https://via.placeholder.com/600x400?text=No+Image'"/>
+   <img src="${img}" alt="${p.title}"
+     class="h-full w-full object-cover rounded-lg mb-3 cursor-pointer group-hover:scale-110 transition-transform duration-800"
+     onerror="this.src='https://via.placeholder.com/600x400?text=No+Image'"/>
       </div>
-
-      <!-- Title -->
-      <h3 class="text-lg font-semibold mb-2 line-clamp-1">${p.title}</h3>
-
+      <div class='flex flex-col gap-2 p-5 group-hover:bg-slate-200'>
+      
+      <!-- Product title -->
+      <h3 class="text-2xl font-semibold mb-2 line-clamp-1">${p.title}</h3>
+      
       <!-- Description -->
       <p class="text-sm text-gray-600 flex-grow line-clamp-2">${(p.description || "").toString().slice(0, 120)}</p>
-
-      <!-- Price -->
+      
+      <div class='flex gap-2 w-full justify-between items-center'>
+       <!-- Price -->
       <p class="text-2xl font-semibold text-gray-800 mt-3">Price: $${money(p.price)}</p>
-
-      <!-- Add to Cart -->
-      <button class="mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+      <!-- Add to Cart button -->
+      <button class="mt-3 text-base font-semibold flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
               data-action="add-cart" data-id="${p.id}">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
           <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a1 1 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
         </svg>
         Add to Cart
       </button>
-    `;
+      </div>
+    
+      </div>
 
-        // stagger entrance animation
+    `;
         card.style.opacity = "0";
         card.style.translate = "0 8px";
         setTimeout(() => {
@@ -164,7 +166,7 @@ function renderProducts() {
         container.appendChild(card);
     });
 
-    // Load button label
+
     if (visibleCount >= filtered.length) {
         loadBtn.textContent = "Show Less";
     } else {
@@ -173,7 +175,6 @@ function renderProducts() {
     loadBtn.classList.remove("hidden");
 }
 
-// ===== Interactions (event delegation) =====
 container.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
@@ -184,7 +185,7 @@ container.addEventListener("click", (e) => {
     if (!product) return;
 
     if (action === "fav") {
-        // toggle favourite
+
         const svg = btn.querySelector("svg");
         if (favourites.has(id)) {
             favourites.delete(id);
@@ -200,7 +201,7 @@ container.addEventListener("click", (e) => {
     }
 
     if (action === "add-cart") {
-        // add to cart (increase qty if exists)
+
         const idx = cart.findIndex(i => i.id === id);
         if (idx >= 0) {
             cart[idx].qty += 1;
@@ -212,12 +213,11 @@ container.addEventListener("click", (e) => {
     }
 });
 
-// Heart hover: non-favourited hearts turn red on hover; revert on leave
 container.addEventListener("mouseover", (e) => {
     const btn = e.target.closest("[data-action='fav']");
     if (!btn) return;
     const id = Number(btn.getAttribute("data-id"));
-    if (favourites.has(id)) return; // already red
+    if (favourites.has(id)) return;
     const svg = btn.querySelector("svg");
     svg.setAttribute("stroke", "red");
     svg.setAttribute("fill", "red");
@@ -226,29 +226,28 @@ container.addEventListener("mouseout", (e) => {
     const btn = e.target.closest("[data-action='fav']");
     if (!btn) return;
     const id = Number(btn.getAttribute("data-id"));
-    if (favourites.has(id)) return; // keep red
+    if (favourites.has(id)) return;
     const svg = btn.querySelector("svg");
     svg.setAttribute("stroke", "white");
     svg.setAttribute("fill", "none");
 });
 
-// Load more / less
 loadBtn.addEventListener("click", () => {
     if (visibleCount >= filtered.length) {
-        // show less down to minVisible
+
         visibleCount = Math.max(minVisible, visibleCount - step);
     } else {
+
         visibleCount = Math.min(filtered.length, visibleCount + step);
     }
     renderProducts();
 });
 
-// Search
 if (searchInput) {
     searchInput.addEventListener("input", applyFilter);
 }
 
-// ===== Header popups =====
+
 cartBtnHeader.addEventListener("click", () => {
     if (cart.length === 0) {
         openPopup("Cart", `<p class="text-gray-600">Your cart is empty.</p>`);
@@ -325,7 +324,7 @@ ordersBtnHeader.addEventListener("click", () => {
     openPopup("Orders", `<div class="space-y-3">${html}</div>`);
 });
 
-// Popup body actions (qty change, remove, unfav, checkout)
+
 popupBody.addEventListener("click", (e) => {
     const minus = e.target.closest("[data-qty-minus]");
     const plus = e.target.closest("[data-qty-plus]");
@@ -339,7 +338,7 @@ popupBody.addEventListener("click", (e) => {
             cart[idx].qty = Math.max(1, cart[idx].qty - 1);
             saveLS("cart", cart);
             syncCounts();
-            cartBtnHeader.click(); // refresh popup
+            cartBtnHeader.click();
         }
     }
     if (plus) {
@@ -365,7 +364,7 @@ popupBody.addEventListener("click", (e) => {
         saveLS("favourites", Array.from(favourites));
         syncCounts();
         favBtnHeader.click();
-        // Also update any visible heart icon in the grid
+
         const btn = container.querySelector(`[data-action="fav"][data-id="${id}"]`);
         if (btn) {
             const svg = btn.querySelector("svg");
@@ -375,7 +374,7 @@ popupBody.addEventListener("click", (e) => {
     }
 });
 
-// Checkout
+
 overlay.addEventListener("click", (e) => {
     if (e.target.id === "checkout-btn") {
         if (cart.length === 0) return;
@@ -383,7 +382,7 @@ overlay.addEventListener("click", (e) => {
         const order = {
             id: (orders[orders.length - 1]?.id || 0) + 1,
             date: Date.now(),
-            items: cart.map(i => ({ ...i })), // copy
+            items: cart.map(i => ({ ...i })),
             total
         };
         orders.push(order);
@@ -391,10 +390,9 @@ overlay.addEventListener("click", (e) => {
         cart = [];
         saveLS("cart", cart);
         syncCounts();
-        // Show Orders popup immediately
         ordersBtnHeader.click();
     }
 });
 
-// ===== Start =====
+
 loadProducts();
